@@ -51,17 +51,22 @@ def open_audio_file():
     ])
     if path:
         audio_path_var.set(path)  # Обновляем переменную, связанная с Entry
+        
 def open_text_file():
-    text_file_path = filedialog.askopenfilename(title="Выберите аудиофайл", filetypes=[
-        ("Текст", "*.txt"),
-        ("Текст", "*.srt"),
-        ("Текст", "*.tsv"),
-    ],
-    initialdir=OUTPUT_FOLDER)
-    with open(str(text_file_path), 'r', encoding="utf8") as f:
-        fileText = f.read()
-        text_output.delete(1.0, tk.END)
-        text_output.insert(0.0, fileText)
+    text_file_path = filedialog.askopenfilename(
+        title="Выберите файл текста",
+        filetypes=[
+            ("Текст", "*.txt"),
+            ("Текст", "*.srt"),
+            ("Текст", "*.tsv"),
+        ],
+        initialdir=OUTPUT_FOLDER
+    )
+    if text_file_path:
+        with open(text_file_path, 'r', encoding="utf8") as f:
+            fileText = f.read()
+            text_output.delete(1.0, tk.END)
+            text_output.insert(0.0, fileText)
 
 def decode_audio_file():
     path = audio_path_var.get()
