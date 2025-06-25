@@ -426,7 +426,7 @@ window.config(menu=menubar)
 # Обработка закрытия окна
 window.protocol("WM_DELETE_WINDOW", on_closing)
 
-# Загружаем модель при старте
+# Вывод статус-бара с информацией о наличии загруженной модели
 try:
     model = whisper.load_model(MODEL_PATH)
     status_bar.config(text="Модель загружена. Готов к работе.")
