@@ -42,28 +42,52 @@ def load_model():
             except:
                 pass
     
-MODEL_PATH = os.path.join('models', 'large-turbo.pt')
-
-# Создание выходной папки
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-# Глобальные переменные
-model = None
-token = None
-
-
-
-def load_model():
-    global model
-    if model is not None:
-        return
-    if os.path.exists(MODEL_PATH):
-        print('Загружаем модель из локального файла')
-        model = whisper.load_model(MODEL_PATH)
-    else:
-        print('Локальной модели нет, скачиваем...')
-        model = whisper.load_model('large')
-
+    # Если локальной модели нет, скачиваем
+    print('Локальной модели нет, скачиваем...')
+    try:
+        model = whisper.load_model(MODEL_NAME)
+        
+        # Пытаемся сохранить модель локально для будущего использования
+        print('Сохраняем модель локально...')
+        try:
+            # Проверяем стандартные пути к кешу Whisper
+            cache_dir = os.path.dirname(whisper.__file__)
+            cache_path = os.path.join(cache_dir, 'assets', MODEL_NAME + '.pt')
+            
+            if not os.path.exists(cache_path):
+                cache_path = os.path.join(os.path.expanduser('~'), '.cache', 'whisper', MODEL_NAME + '.pt')
+            
+            if os.path.exists(cache_path):
+                shutil.copy2(cache_path, MODEL_PATH)
+                print(f'Модель сохранена в: {MODEL_PATH}')
+            else:
+                # Альтернативный способ сохранения через torch
+                try:
+                    import torch
+                    torch.save(model.state_dict(), MODEL_PATH)
+                    print(f'Модель сохранена напрямую в: {MODEL_PATH}')
+                except Exception as torch_error:
+                    print(f'Ошибка при сохранении модели через torch: {torch_error}')
+                
+        except Exception as copy_error:
+            print(f'Ошибка при сохранении модели: {copy_error}')
+            
+        return model
+        
+    except Exception as e:
+        # Формируем подробное сообщение об ошибке
+        error_msg = f"Не удалось загрузить модель:\n{str(e)}\n\n"
+        error_msg += "Возможные решения:\n"
+        error_msg += "1. Проверьте подключение к интернету\n"
+        error_msg += "2. Убедитесь, что у вас достаточно места на диске (требуется ~3GB)\n"
+        error_msg += "3. Попробуйте установить модель вручную:\n"
+        error_msg += f"   - Скачайте large-v3.pt с https://openaipublic.azureedge.net/main/whisper/models/\n"
+        error_msg += f"   - Поместите файл в папку {MODEL_FOLDER}\n"
+        error_msg += f"4. Проверьте права доступа к папке {MODEL_FOLDER}\n"
+        error_msg += "5. Попробуйте запустить программу от имени администратора"
+        
+        messagebox.showerror("Критическая ошибка", error_msg)
+        sys.exit(1)
 
 # Транскрибирование аудио. Язык - русский. TBD - возможность выбора языков
 def get_transcribe(audio_path: str, language: str = 'Russian'):
@@ -404,10 +428,10 @@ window.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Загружаем модель при старте
 try:
-    load_model()
+    model = whisper.load_model(MODEL_PATH)
     status_bar.config(text="Модель загружена. Готов к работе.")
 except:
-    status_bar.config(text="Ошибка загрузки модели. Проверьте подключение к интернету.")
+    status_bar.config(text="Модель не найдена. Модель будет скачана при запуске транскрибирования")
 
 # Запуск главного цикла
 window.mainloop()
